@@ -3,7 +3,7 @@ import { faker } from "@faker-js/faker";
 import dayjs from "dayjs";
 
 export async function createRandomUser(adult?: boolean){
-    const birthDate = adult ? dayjs("2000-10-10").toDate() : faker.date.birthdate();
+    const birthDate = adult ? dayjs("2000-10-10").toDate() : dayjs("2009-10-10").toDate();
     const user = await prisma.user.create({
         data: {
             firstName: faker.person.firstName(),

@@ -70,7 +70,7 @@ describe("Rentals Service Integration Tests", () => {
 
   describe("post /rentals tests", () => {
     it("should return 201 when body is valid", async () => {
-      const userOne = await createRandomUser();
+      const userOne = await createRandomUser(true);
       const movieOne = await createRandomMovie(false);
       const movieTwo = await createRandomMovie(false);
       const { status } = await api.post(`/rentals`).send({
@@ -89,6 +89,47 @@ describe("Rentals Service Integration Tests", () => {
             closed: false
           }]);
     })
+
+      it("should return 401 when underage tries to rent adult movie", async () => {
+        const userOne = await createRandomUser(false);
+        const movieOne = await createRandomMovie(true);
+        const movieTwo = await createRandomMovie(false);
+        const { status } = await api.post(`/rentals`).send({
+          userId: userOne.id,
+          moviesId: [movieOne.id, movieTwo.id]
+        });
+        expect(status).toBe(401);
+      })
+
+      it("should return 409 if movie is already rented", async () => {
+        const userOne = await createRandomUser(true);
+        const movieOne = await createRandomMovie(false);
+        const userTwo = await createRandomUser(true);
+        await api.post(`/rentals`).send({
+          userId: userOne.id,
+          moviesId: [movieOne.id]
+        });
+        const { status } = await api.post(`/rentals`).send({
+          userId: userTwo.id,
+          moviesId: [movieOne.id]
+        });
+        expect(status).toBe(409);
+      })
+
+      it("should return 402 if user has an open rental", async () => {
+        const userOne = await createRandomUser(true);
+        const movieOne = await createRandomMovie(false);
+        const movieTwo = await createRandomUser(true);
+        await api.post(`/rentals`).send({
+          userId: userOne.id,
+          moviesId: [movieOne.id]
+        });
+        const { status } = await api.post(`/rentals`).send({
+          userId: userOne.id,
+          moviesId: [movieTwo.id]
+        });
+        expect(status).toBe(402);
+      })
 
     it("should return 422 when body is invalid", async () => {
       const { status } = await api.post(`/rentals`).send({});
@@ -115,7 +156,15 @@ describe("Rentals Service Integration Tests", () => {
             userId: userOne.id,
             closed: true
           }]);
+      const movies = await prisma.movie.findMany();
+      console.log(movies)
+      expect(movies).toEqual(expect.arrayContaining([expect.objectContaining({
+        rentalId: null
+      })]));
+
     })
 
   })
+
+  
 })
